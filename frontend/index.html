@@ -1,0 +1,2283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PaymentGuard — AI Payment Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ───────────────────────────────────────────────────────
+       DESIGN TOKENS — Razorpay-inspired light theme
+    ─────────────────────────────────────────────────────── */
+    :root {
+      --bg:          #F1F5F9;
+      --card:        #FFFFFF;
+      --sidebar-bg:  #FFFFFF;
+      --header-bg:   #FFFFFF;
+
+      --blue:        #2D87F0;
+      --blue-hover:  #1a75de;
+      --blue-light:  #EBF4FE;
+      --blue-2:      #528FF0;
+
+      --text-h:      #1A1A2E;
+      --text-b:      #4A5568;
+      --text-m:      #718096;
+      --text-d:      #A0AEC0;
+
+      --border:      #E2E8F0;
+      --border-2:    #CBD5E0;
+
+      --green:       #38A169;
+      --green-light: #F0FFF4;
+      --green-border:#9AE6B4;
+
+      --amber:       #D97706;
+      --amber-light: #FFFBEB;
+      --amber-border:#FCD34D;
+
+      --red:         #E53E3E;
+      --red-light:   #FFF5F5;
+      --red-border:  #FEB2B2;
+
+      --purple:      #7C3AED;
+      --purple-light:#F5F3FF;
+
+      --radius-sm:   4px;
+      --radius-md:   8px;
+      --radius-lg:   12px;
+      --radius-xl:   16px;
+
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md:   0 4px 6px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.04);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-b);
+      min-height: 100vh;
+      font-size: 13.5px;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
+
+    /* ─── Scrollbars ──────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-d); }
+
+    /* ─── Shimmer skeleton ────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -600px 0; }
+      100% { background-position: 600px 0; }
+    }
+    .skel {
+      background: linear-gradient(90deg, #f0f4f8 25%, #e8edf2 50%, #f0f4f8 75%);
+      background-size: 600px 100%;
+      animation: shimmer 1.5s infinite linear;
+      border-radius: 4px;
+    }
+    .skel-line  { height: 13px; }
+    .skel-short { width: 40%; height: 13px; }
+    .skel-title { width: 55%; height: 20px; }
+    .skel-bar   { height: 6px; border-radius: 3px; }
+    .skel-circle { width: 88px; height: 88px; border-radius: 50%; flex-shrink: 0; }
+    .skel-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 18px;
+      display: flex; flex-direction: column; gap: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ═══════════════════════════════════════════
+       HEADER
+    ═══════════════════════════════════════════ */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      height: 56px;
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 20px;
+      gap: 0;
+      box-shadow: 0 1px 0 var(--border);
+    }
+
+    /* Logo */
+    .logo {
+      display: flex; align-items: center; gap: 9px;
+      text-decoration: none; flex-shrink: 0;
+      margin-right: 28px;
+    }
+    .logo-mark {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-name {
+      font-size: 15px; font-weight: 700; color: var(--text-h);
+      letter-spacing: -0.02em;
+    }
+    .logo-name span { color: var(--blue); }
+
+    /* Center nav tabs */
+    .nav-tabs {
+      display: flex; align-items: center; gap: 2px;
+      flex: 1; justify-content: center;
+    }
+    .nav-tab {
+      padding: 6px 16px; border-radius: var(--radius-md);
+      font-size: 13px; font-weight: 500; color: var(--text-m);
+      cursor: pointer; border: none; background: transparent;
+      font-family: inherit; transition: all 0.12s;
+    }
+    .nav-tab:hover { color: var(--text-h); background: var(--bg); }
+    .nav-tab.active {
+      color: var(--blue); background: var(--blue-light);
+      font-weight: 600;
+    }
+
+    /* Right area */
+    .header-right {
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .notif-wrap { position: relative; }
+    .notif-btn {
+      width: 36px; height: 36px; border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: 1px solid var(--border);
+      cursor: pointer; color: var(--text-m); position: relative;
+      transition: all 0.12s;
+    }
+    .notif-btn:hover { background: var(--bg); color: var(--text-h); border-color: var(--border-2); }
+    .notif-badge {
+      position: absolute; top: -4px; right: -4px;
+      min-width: 16px; height: 16px; border-radius: 8px;
+      background: var(--red); color: #fff;
+      font-size: 9px; font-weight: 700;
+      display: none; align-items: center; justify-content: center;
+      padding: 0 4px; border: 2px solid #fff;
+    }
+    .notif-badge.show { display: flex; }
+
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), var(--blue-2));
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+    }
+
+    .mob-toggle {
+      display: none;
+      align-items: center; gap: 6px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-b); padding: 6px 12px; border-radius: var(--radius-md);
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      font-family: inherit; margin-right: 8px;
+    }
+
+    /* ─── Notification dropdown ─────────────── */
+    .notif-panel {
+      display: none;
+      position: absolute; top: calc(100% + 8px); right: 0;
+      width: 320px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      z-index: 200; overflow: hidden;
+    }
+    .notif-panel.open { display: block; }
+
+    .notif-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .notif-header-title { font-size: 13px; font-weight: 600; color: var(--text-h); }
+    .notif-mark-all {
+      font-size: 11.5px; color: var(--blue); cursor: pointer;
+      border: none; background: none; font-family: inherit; font-weight: 500;
+    }
+    .notif-mark-all:hover { text-decoration: underline; }
+
+    .notif-list { max-height: 320px; overflow-y: auto; }
+    .notif-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background 0.1s;
+    }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item:hover { background: var(--bg); }
+    .notif-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 4px;
+    }
+    .notif-content { flex: 1; }
+    .notif-msg { font-size: 12.5px; color: var(--text-b); line-height: 1.4; }
+    .notif-meta { font-size: 11px; color: var(--text-d); margin-top: 3px; }
+    .notif-empty {
+      padding: 28px; text-align: center;
+      font-size: 12.5px; color: var(--text-m);
+    }
+
+    /* ═══════════════════════════════════════════
+       LAYOUT
+    ═══════════════════════════════════════════ */
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      height: calc(100vh - 56px);
+    }
+
+    /* ═══════════════════════════════════════════
+       SIDEBAR
+    ═══════════════════════════════════════════ */
+    .sidebar {
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-stats {
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sidebar-stats-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-d);
+      margin-bottom: 10px;
+    }
+    .stats-row { display: flex; gap: 6px; }
+    .stat {
+      flex: 1; background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 8px 10px; text-align: center;
+    }
+    .stat-n { font-size: 18px; font-weight: 700; line-height: 1; color: var(--text-h); }
+    .stat-l {
+      font-size: 9.5px; color: var(--text-d);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-top: 3px;
+    }
+
+    .case-search {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .case-search input {
+      width: 100%; padding: 7px 10px 7px 32px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius-md); font-size: 12.5px;
+      color: var(--text-b); outline: none; font-family: inherit;
+      transition: border-color 0.12s;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a0aec0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 10px center;
+    }
+    .case-search input:focus { border-color: var(--blue); background-color: #fff; }
+    .case-search input::placeholder { color: var(--text-d); }
+
+    .case-scroll {
+      flex: 1; overflow-y: auto; padding: 8px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .sidebar-section-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--text-d);
+      padding: 4px 6px 6px; margin-top: 4px;
+    }
+
+    /* Case items */
+    .case-item {
+      position: relative;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--card);
+      padding: 10px 12px 10px 14px;
+      cursor: pointer; overflow: hidden;
+      transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
+    }
+    .case-item::before {
+      content: ''; position: absolute;
+      left: 0; top: 0; bottom: 0; width: 3px;
+    }
+    .case-item.status-green::before  { background: var(--green); }
+    .case-item.status-amber::before  { background: var(--amber); }
+    .case-item.status-red::before    { background: var(--red); }
+    .case-item:hover { border-color: var(--border-2); box-shadow: var(--shadow-sm); }
+    .case-item.active {
+      border-color: var(--blue);
+      border-left-color: var(--blue);
+      background: var(--blue-light);
+      box-shadow: 0 0 0 1px var(--blue);
+    }
+    .case-item.active::before { background: var(--blue); }
+
+    .ci-top {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; margin-bottom: 7px;
+    }
+    .ci-merchant {
+      font-size: 12.5px; font-weight: 600; color: var(--text-h);
+      line-height: 1.3; max-width: 140px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ci-amount {
+      font-size: 12px; font-weight: 700; color: var(--blue);
+      white-space: nowrap; margin-left: 6px;
+    }
+
+    .ci-bar {
+      height: 3px; background: var(--border); border-radius: 2px;
+      margin-bottom: 7px; overflow: hidden;
+    }
+    .ci-fill {
+      height: 100%; border-radius: 2px;
+      transition: width 0.5s cubic-bezier(.4,0,.2,1);
+    }
+
+    .ci-bottom {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .ci-score { font-size: 11.5px; font-weight: 600; }
+    .badge {
+      display: inline-flex; align-items: center;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.03em;
+      padding: 2px 7px; border-radius: 999px; border: 1px solid;
+    }
+    .badge-green  { color: var(--green); background: var(--green-light); border-color: var(--green-border); }
+    .badge-amber  { color: var(--amber); background: var(--amber-light); border-color: var(--amber-border); }
+    .badge-red    { color: var(--red);   background: var(--red-light);   border-color: var(--red-border); }
+    .badge-blue   { color: var(--blue);  background: var(--blue-light);  border-color: #93C5FD; }
+    .badge-purple { color: var(--purple); background: var(--purple-light); border-color: #C4B5FD; }
+
+    /* ═══════════════════════════════════════════
+       MAIN PANEL
+    ═══════════════════════════════════════════ */
+    .main {
+      overflow-y: auto;
+      background: var(--bg);
+    }
+
+    /* ─── Empty state ──────────────────────────── */
+    .empty-wrap {
+      padding: 20px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    .empty-state {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 64px 32px; gap: 16px;
+      text-align: center;
+    }
+    .empty-icon {
+      width: 64px; height: 64px; border-radius: 16px;
+      background: var(--blue-light); border: 1px solid #93C5FD;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .empty-state h3 { font-size: 16px; font-weight: 600; color: var(--text-h); }
+    .empty-state p  { font-size: 13px; color: var(--text-m); max-width: 280px; }
+
+    /* ─── Cards ──────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .card-title {
+      font-size: 12px; font-weight: 600; color: var(--text-m);
+      text-transform: uppercase; letter-spacing: 0.07em;
+    }
+    .card-action {
+      font-size: 12px; color: var(--blue); cursor: pointer;
+      border: none; background: none; font-family: inherit; font-weight: 500;
+    }
+    .card-action:hover { text-decoration: underline; }
+
+    /* ─── Checkout card ──────────────────────── */
+    .checkout-card { border-color: var(--blue); }
+    .checkout-card .card-title { color: var(--blue); }
+
+    .checkout-form {
+      display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
+    }
+    .checkout-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
+    .checkout-field label { font-size: 11.5px; font-weight: 500; color: var(--text-m); }
+    .checkout-input {
+      padding: 8px 11px; border: 1px solid var(--border);
+      border-radius: var(--radius-md); font-size: 13px;
+      color: var(--text-h); font-family: inherit; outline: none;
+      background: var(--card); transition: border-color 0.12s, box-shadow 0.12s;
+      width: 100%;
+    }
+    .checkout-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(45,135,240,0.1);
+    }
+    .checkout-input::placeholder { color: var(--text-d); }
+    .btn-pay {
+      padding: 8px 20px; background: var(--blue); color: #fff;
+      border: none; border-radius: var(--radius-md);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: background 0.12s, box-shadow 0.12s;
+      white-space: nowrap; flex-shrink: 0;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-pay:hover { background: var(--blue-hover); box-shadow: 0 4px 12px rgba(45,135,240,0.3); }
+    .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ─── Case view ──────────────────────────── */
+    .case-view { padding: 20px; display: flex; flex-direction: column; gap: 14px; max-width: 980px; }
+
+    /* Hero */
+    .hero-card { padding: 22px 24px; }
+    .hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+    .hero-left { flex: 1; }
+    .hero-merchant {
+      font-size: 22px; font-weight: 700; color: var(--text-h);
+      letter-spacing: -0.02em; margin-bottom: 10px;
+    }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 7px; }
+    .meta-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; color: var(--text-m);
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 4px 10px; border-radius: 999px;
+    }
+    .hero-actions { margin-top: 16px; display: flex; gap: 10px; align-items: center; }
+    .btn-resolve {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 18px; background: var(--green); color: #fff;
+      border: none; border-radius: var(--radius-md);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: background 0.12s, box-shadow 0.12s;
+    }
+    .btn-resolve:hover { background: #2f8a5a; box-shadow: 0 4px 12px rgba(56,161,105,0.3); }
+    .btn-resolve:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-resolve.resolved { background: #2f8a5a; cursor: default; }
+
+    /* Score ring */
+    .score-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; }
+    .ring-svg { position: relative; width: 88px; height: 88px; }
+    .ring-svg svg { transform: rotate(-90deg); }
+    .ring-center {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .ring-num { font-size: 22px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+    .ring-den { font-size: 9px; color: var(--text-d); margin-top: 2px; }
+
+    /* Score breakdown */
+    .breakdown-list { display: flex; flex-direction: column; gap: 5px; }
+    .breakdown-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: var(--radius-md);
+      font-size: 12.5px; border: 1px solid;
+    }
+    .breakdown-item.pos {
+      background: var(--green-light); border-color: var(--green-border); color: #276749;
+    }
+    .breakdown-item.neg {
+      background: var(--red-light); border-color: var(--red-border); color: #9B2C2C;
+    }
+    .bd-icon { font-size: 14px; flex-shrink: 0; }
+    .bd-label { flex: 1; }
+    .bd-pts { font-weight: 700; font-size: 11.5px; }
+
+    /* Timeline */
+    .tl { display: flex; flex-direction: column; }
+    .tl-row { display: flex; gap: 12px; }
+    .tl-gutter { display: flex; flex-direction: column; align-items: center; width: 32px; flex-shrink: 0; }
+    .tl-node {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; border: 1.5px solid; z-index: 1;
+    }
+    .tl-connector {
+      flex: 1; width: 2px; background: var(--border);
+      margin: 3px 0; min-height: 12px;
+    }
+    .tl-body { padding: 2px 0 16px; flex: 1; }
+    .tl-row:last-child .tl-body { padding-bottom: 0; }
+    .tl-name { font-size: 13px; font-weight: 600; color: var(--text-h); }
+    .tl-when { font-size: 11px; color: var(--text-m); margin-top: 2px; }
+    .tl-detail {
+      display: inline-block; margin-top: 5px;
+      font-size: 11.5px; color: var(--text-m);
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 3px 9px; border-radius: var(--radius-sm);
+    }
+
+    /* Simulate */
+    .sim-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+    .sim-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 7px 13px;
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text-b); border-radius: var(--radius-md);
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      font-family: inherit; transition: all 0.12s;
+    }
+    .sim-btn:hover { background: var(--bg); border-color: var(--border-2); color: var(--text-h); }
+    .sim-btn.warn { border-color: var(--amber-border); color: var(--amber); }
+    .sim-btn.warn:hover { background: var(--amber-light); }
+    .sim-btn.danger { border-color: var(--red-border); color: var(--red); }
+    .sim-btn.danger:hover { background: var(--red-light); }
+    .sim-btn.good { border-color: var(--green-border); color: var(--green); }
+    .sim-btn.good:hover { background: var(--green-light); }
+
+    /* Pending approvals */
+    .action-table { width: 100%; border-collapse: collapse; }
+    .action-table th {
+      text-align: left; font-size: 11px; font-weight: 600;
+      color: var(--text-m); text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0 12px 10px; border-bottom: 1px solid var(--border);
+    }
+    .action-row {
+      background: var(--amber-light);
+      border-radius: var(--radius-md);
+      transition: background 0.1s;
+    }
+    .action-row td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--amber-border);
+      vertical-align: middle;
+    }
+    .action-row:last-child td { border-bottom: none; }
+    .action-name { font-size: 12.5px; font-weight: 600; color: var(--text-h); }
+    .action-reason { font-size: 11.5px; color: var(--text-m); margin-top: 3px; }
+    .action-btns { display: flex; gap: 6px; justify-content: flex-end; }
+    .act-yes {
+      padding: 5px 13px; border-radius: var(--radius-md);
+      background: var(--green); color: #fff;
+      border: none; font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: opacity 0.12s;
+    }
+    .act-yes:hover { opacity: 0.85; }
+    .act-no {
+      padding: 5px 13px; border-radius: var(--radius-md);
+      background: var(--card); color: var(--red);
+      border: 1px solid var(--red-border); font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: background 0.12s;
+    }
+    .act-no:hover { background: var(--red-light); }
+
+    /* AI Chat */
+    .chat-shell { display: flex; flex-direction: column; gap: 12px; }
+    .chat-log {
+      display: flex; flex-direction: column; gap: 10px;
+      min-height: 80px; max-height: 300px; overflow-y: auto;
+      padding: 4px 0;
+    }
+    .msg {
+      padding: 10px 14px; border-radius: var(--radius-md);
+      font-size: 13px; line-height: 1.65; max-width: 88%;
+    }
+    .msg-user {
+      align-self: flex-end;
+      background: var(--blue); color: #fff;
+      border-bottom-right-radius: 3px;
+    }
+    .msg-ai {
+      align-self: flex-start;
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text-b); border-bottom-left-radius: 3px;
+    }
+    .msg-ai b, .msg-ai strong { color: var(--text-h); font-weight: 600; }
+    .msg-ai table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 12px; }
+    .msg-ai th, .msg-ai td { padding: 6px 9px; border: 1px solid var(--border); text-align: left; }
+    .msg-ai th { background: var(--bg); font-weight: 600; color: var(--text-h); }
+    .msg-ai code {
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 1px 5px; border-radius: 3px; font-size: 11.5px;
+    }
+
+    .typing {
+      display: flex; align-items: center; gap: 3px;
+      padding: 11px 14px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius-md); border-bottom-left-radius: 3px;
+      align-self: flex-start;
+    }
+    .typing span {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-d);
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.16s; }
+    .typing span:nth-child(3) { animation-delay: 0.32s; }
+    @keyframes bounce { 0%,80%,100%{transform:scale(0.6);opacity:0.3} 40%{transform:scale(1);opacity:1} }
+
+    .chat-input-area { display: flex; gap: 8px; }
+    .chat-in {
+      flex: 1; background: var(--card);
+      border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 9px 13px; color: var(--text-h);
+      font-size: 13px; font-family: inherit; outline: none;
+      transition: border-color 0.12s, box-shadow 0.12s;
+    }
+    .chat-in:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(45,135,240,0.1);
+    }
+    .chat-in::placeholder { color: var(--text-d); }
+
+    .btn-send {
+      background: var(--blue); color: #fff; border: none;
+      border-radius: var(--radius-md); padding: 9px 16px;
+      font-size: 12.5px; font-weight: 600; cursor: pointer;
+      transition: background 0.12s; white-space: nowrap;
+      font-family: inherit; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-send:hover { background: var(--blue-hover); }
+    .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .quick-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .quick {
+      padding: 5px 11px; border-radius: 999px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-m); font-size: 11.5px; cursor: pointer;
+      font-family: inherit; transition: all 0.12s;
+    }
+    .quick:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+
+    /* Collapsible checkout in case view */
+    .checkout-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none;
+    }
+    .checkout-toggle .toggle-icon { color: var(--text-m); font-size: 11px; transition: transform 0.2s; }
+    .checkout-toggle.collapsed .toggle-icon { transform: rotate(-90deg); }
+    .checkout-body { overflow: hidden; transition: max-height 0.25s ease; }
+    .checkout-body.collapsed { max-height: 0 !important; }
+
+    /* ═══════════════════════════════════════════
+       DEMO MODAL
+    ═══════════════════════════════════════════ */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+      z-index: 200; align-items: center; justify-content: center;
+    }
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl); padding: 28px;
+      max-width: 460px; width: calc(100% - 32px);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+    }
+    .modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .modal-icon {
+      width: 40px; height: 40px; border-radius: var(--radius-md);
+      background: var(--blue-light); border: 1px solid #93C5FD;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .modal h2 { font-size: 16px; font-weight: 700; color: var(--text-h); }
+    .modal p { font-size: 13px; color: var(--text-m); line-height: 1.6; margin-bottom: 18px; }
+
+    .demo-steps { display: flex; flex-direction: column; gap: 6px; margin-bottom: 22px; }
+    .dstep {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 12px; border-radius: var(--radius-md);
+      background: var(--bg); border: 1px solid var(--border);
+      font-size: 12.5px; color: var(--text-b); line-height: 1.5;
+    }
+    .dstep-n {
+      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+      background: var(--blue); color: #fff;
+      font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 1px;
+    }
+    .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn-ghost {
+      padding: 9px 16px; border-radius: var(--radius-md);
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text-b); font-size: 13px; cursor: pointer;
+      font-family: inherit; font-weight: 500; transition: background 0.12s;
+    }
+    .btn-ghost:hover { background: var(--bg); }
+    .btn-primary {
+      padding: 9px 18px; border-radius: var(--radius-md);
+      background: var(--blue); border: none;
+      color: #fff; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: background 0.12s, box-shadow 0.12s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-primary:hover { background: var(--blue-hover); box-shadow: 0 4px 12px rgba(45,135,240,0.3); }
+
+    /* Demo progress bar */
+    .demo-bar {
+      display: none; position: fixed;
+      bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 14px 20px;
+      z-index: 150; min-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+    .demo-bar.open { display: block; }
+    .demo-bar-label {
+      font-size: 12.5px; color: var(--text-m); margin-bottom: 8px;
+    }
+    .demo-bar-track {
+      height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
+    }
+    .demo-bar-fill {
+      height: 100%; background: var(--blue); border-radius: 2px;
+      transition: width 0.5s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ─── Toast ──────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      padding: 11px 16px; border-radius: var(--radius-md);
+      font-size: 12.5px; font-weight: 500; z-index: 999;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none; max-width: 300px;
+      box-shadow: var(--shadow-md);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast-ok   { background: var(--green-light); border: 1px solid var(--green-border); color: #276749; }
+    .toast-info { background: var(--blue-light); border: 1px solid #93C5FD; color: #1E4D8C; }
+    .toast-warn { background: var(--amber-light); border: 1px solid var(--amber-border); color: #92400E; }
+    .toast-err  { background: var(--red-light); border: 1px solid var(--red-border); color: #9B2C2C; }
+
+    /* ─── Mobile ─────────────────────────────── */
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar {
+        display: none;
+        position: fixed; inset: 0; z-index: 90;
+        width: 280px; height: 100%;
+        background: var(--sidebar-bg);
+        box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+      }
+      .sidebar.mobile-open { display: flex; }
+      .mob-toggle { display: flex !important; }
+      .nav-tabs { display: none; }
+      .mob-close {
+        display: flex !important;
+        padding: 14px 16px; border-bottom: 1px solid var(--border);
+        font-size: 13px; font-weight: 600; color: var(--text-b);
+        cursor: pointer; align-items: center; gap: 8px; flex-shrink: 0;
+        background: none; border-left: none; border-right: none; border-top: none;
+        font-family: inherit; width: 100%;
+      }
+    }
+    @media (min-width: 769px) {
+      .mob-close { display: none !important; }
+    }
+
+    /* ─── Sidebar groups ─────────────────────── */
+    .group-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 8px 5px;
+      cursor: pointer; user-select: none;
+      border-radius: var(--radius-md);
+      transition: background 0.1s;
+    }
+    .group-header:hover { background: var(--bg); }
+    .group-header-left { display: flex; align-items: center; gap: 7px; }
+    .group-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .group-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .group-count {
+      font-size: 10.5px; font-weight: 600; padding: 1px 6px;
+      border-radius: 999px; border: 1px solid;
+    }
+    .group-toggle { font-size: 10px; color: var(--text-d); transition: transform 0.2s; }
+    .group-toggle.collapsed { transform: rotate(-90deg); }
+    .group-body { overflow: hidden; transition: max-height 0.25s ease; }
+    .group-body.collapsed { max-height: 0 !important; }
+
+    /* Compact case item (single line) */
+    .case-item-compact {
+      position: relative;
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px 7px 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      cursor: pointer; overflow: hidden;
+      transition: border-color 0.12s, background 0.12s;
+      margin-bottom: 2px;
+    }
+    .case-item-compact::before {
+      content: ''; position: absolute;
+      left: 0; top: 0; bottom: 0; width: 3px;
+      border-radius: 2px 0 0 2px;
+    }
+    .case-item-compact.status-green::before  { background: var(--green); }
+    .case-item-compact.status-amber::before  { background: var(--amber); }
+    .case-item-compact.status-red::before    { background: var(--red); }
+    .case-item-compact:hover { background: var(--bg); border-color: var(--border); }
+    .case-item-compact.active {
+      background: var(--blue-light); border-color: var(--blue);
+    }
+    .case-item-compact.active::before { background: var(--blue); }
+    .ci-c-name {
+      flex: 1; font-size: 12.5px; font-weight: 500; color: var(--text-h);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .ci-c-amt { font-size: 11.5px; font-weight: 600; color: var(--text-m); white-space: nowrap; }
+    .ci-c-score { font-size: 11px; font-weight: 700; white-space: nowrap; }
+
+    /* Empty action placeholder */
+    .empty-small {
+      font-size: 12.5px; color: var(--text-m); text-align: center;
+      padding: 16px; background: var(--bg); border-radius: var(--radius-md);
+      border: 1px dashed var(--border);
+    }
+
+    /* ─── Recovery Dashboard ──────────────────── */
+    .recovery-view { padding: 20px; display: flex; flex-direction: column; gap: 14px; max-width: 980px; }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .metric-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+    }
+    .metric-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--text-d); margin-bottom: 8px;
+    }
+    .metric-value {
+      font-size: 26px; font-weight: 800; color: var(--text-h);
+      letter-spacing: -0.03em; line-height: 1;
+    }
+    .metric-sub {
+      font-size: 11.5px; color: var(--text-m); margin-top: 5px;
+    }
+    .metric-card.green { border-color: var(--green-border); background: var(--green-light); }
+    .metric-card.green .metric-value { color: var(--green); }
+    .metric-card.amber { border-color: var(--amber-border); background: var(--amber-light); }
+    .metric-card.amber .metric-value { color: var(--amber); }
+    .metric-card.red   { border-color: var(--red-border);   background: var(--red-light); }
+    .metric-card.red   .metric-value { color: var(--red); }
+    .metric-card.blue  { border-color: #93C5FD; background: var(--blue-light); }
+    .metric-card.blue  .metric-value { color: var(--blue); }
+
+    .btn-batch {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; background: var(--blue); color: #fff;
+      border: none; border-radius: var(--radius-md);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: background 0.12s, box-shadow 0.12s;
+    }
+    .btn-batch:hover { background: var(--blue-hover); box-shadow: 0 4px 12px rgba(45,135,240,0.3); }
+    .btn-batch:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .at-risk-table { width: 100%; border-collapse: collapse; }
+    .at-risk-table th {
+      text-align: left; font-size: 11px; font-weight: 600;
+      color: var(--text-m); text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0 12px 10px; border-bottom: 1px solid var(--border);
+    }
+    .at-risk-table td {
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+      font-size: 12.5px; vertical-align: middle;
+    }
+    .at-risk-table tr:last-child td { border-bottom: none; }
+    .at-risk-table tr:hover td { background: var(--bg); cursor: pointer; }
+
+    .audit-list { display: flex; flex-direction: column; gap: 6px; max-height: 400px; overflow-y: auto; }
+    .audit-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 10px 12px; border-radius: var(--radius-md);
+      border: 1px solid var(--border); background: var(--card);
+      font-size: 12.5px;
+    }
+    .audit-item.recovered { border-color: var(--green-border); background: var(--green-light); }
+    .audit-item.escalated { border-color: var(--amber-border); background: var(--amber-light); }
+    .audit-item.stopped   { border-color: var(--red-border);   background: var(--red-light); }
+    .audit-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .audit-body { flex: 1; }
+    .audit-title { font-weight: 600; color: var(--text-h); }
+    .audit-meta  { color: var(--text-m); font-size: 11.5px; margin-top: 3px; }
+    .audit-msg   { color: var(--text-b); font-size: 11.5px; margin-top: 4px; font-style: italic; }
+    .audit-right { text-align: right; flex-shrink: 0; }
+    .audit-amount { font-weight: 700; color: var(--green); font-size: 13px; }
+    .audit-time   { font-size: 11px; color: var(--text-d); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════ -->
+<header class="header">
+  <!-- Logo -->
+  <a class="logo" href="#">
+    <div class="logo-mark">
+      <!-- Razorpay-style blue shield SVG -->
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="8" fill="#2D87F0"/>
+        <path d="M16 5L7 9.5V16.5C7 21.75 11.05 26.65 16 28C20.95 26.65 25 21.75 25 16.5V9.5L16 5Z" fill="white" fill-opacity="0.15"/>
+        <path d="M16 6.5L8.5 10.5V17C8.5 21.6 12.1 25.9 16 27.2C19.9 25.9 23.5 21.6 23.5 17V10.5L16 6.5Z" fill="white" fill-opacity="0.2"/>
+        <path d="M13 16.5L15.2 18.7L19.5 14" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span class="logo-name">Payment<span>Guard</span></span>
+  </a>
+
+  <!-- Mobile hamburger -->
+  <button class="mob-toggle" onclick="document.getElementById('sidebar').classList.toggle('mobile-open')">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    Cases
+  </button>
+
+  <!-- Center nav tabs -->
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="setTab(this,'dashboard')">Dashboard</button>
+    <button class="nav-tab" onclick="setTab(this,'cases')">Cases</button>
+    <button class="nav-tab" onclick="setTab(this,'recovery')">⚡ Recovery</button>
+  </nav>
+
+  <!-- Right: notifications + avatar -->
+  <div class="header-right">
+    <!-- Notification bell -->
+    <div class="notif-wrap">
+      <button class="notif-btn" id="notif-btn" onclick="toggleNotifPanel()" title="Notifications">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <div class="notif-badge" id="notif-badge">0</div>
+      </button>
+      <!-- Notification dropdown -->
+      <div class="notif-panel" id="notif-panel">
+        <div class="notif-header">
+          <span class="notif-header-title">Notifications</span>
+          <button class="notif-mark-all" onclick="markAllRead()">Mark all read</button>
+        </div>
+        <div class="notif-list" id="notif-list">
+          <div class="notif-empty">Loading notifications...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run demo button -->
+    <button class="btn-pay" onclick="openModal()" style="padding:7px 14px;font-size:12.5px;">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M3 2l7 4-7 4V2z"/></svg>
+      Run Demo
+    </button>
+
+    <!-- Avatar -->
+    <div class="avatar" title="Account">PG</div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════
+     LAYOUT
+═══════════════════════════════════════════════ -->
+<div class="layout">
+
+  <!-- ─── SIDEBAR ─────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <!-- Mobile close -->
+    <button class="mob-close" onclick="document.getElementById('sidebar').classList.remove('mobile-open')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Close
+    </button>
+
+    <!-- Stats -->
+    <div class="sidebar-stats">
+      <div class="sidebar-stats-label">Overview</div>
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-n" id="s-total">—</div>
+          <div class="stat-l">Total</div>
+        </div>
+        <div class="stat">
+          <div class="stat-n" id="s-watch" style="color:var(--amber)">—</div>
+          <div class="stat-l">Attention</div>
+        </div>
+        <div class="stat">
+          <div class="stat-n" id="s-crit" style="color:var(--red)">—</div>
+          <div class="stat-l">Critical</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="case-search">
+      <input type="text" id="case-search-input" placeholder="Search cases…" oninput="filterCases(this.value)" />
+    </div>
+
+    <!-- Case list -->
+    <div class="case-scroll" id="case-scroll">
+      <!-- skeleton loaders -->
+      <div class="sidebar-section-label">Payment Cases</div>
+      ${[1,2,3,4].map(()=>`
+        <div class="skel-card" style="gap:9px;padding:12px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="skel skel-line" style="width:52%"></div>
+            <div class="skel skel-short" style="width:24%"></div>
+          </div>
+          <div class="skel skel-bar"></div>
+          <div style="display:flex;justify-content:space-between">
+            <div class="skel skel-line" style="width:28%"></div>
+            <div class="skel skel-line" style="width:32%"></div>
+          </div>
+        </div>`).join('')}
+    </div>
+  </aside>
+
+  <!-- ─── MAIN ──────────────────────────────────── -->
+  <main class="main" id="main">
+    <!-- Empty state (initial) -->
+    <div class="empty-wrap" id="empty-view">
+      <!-- Checkout card always at top -->
+      <div class="card checkout-card" id="checkout-card-empty">
+        <div class="card-header">
+          <span class="card-title" style="color:var(--blue)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Simulate New Payment
+          </span>
+        </div>
+        <div class="checkout-form" id="checkout-form-empty">
+          <div class="checkout-field">
+            <label for="co-merchant-empty">Merchant Name</label>
+            <input class="checkout-input" id="co-merchant-empty" type="text" placeholder="e.g. Amazon India" />
+          </div>
+          <div class="checkout-field" style="max-width:160px">
+            <label for="co-amount-empty">Amount (₹)</label>
+            <input class="checkout-input" id="co-amount-empty" type="number" placeholder="e.g. 4999" min="1" />
+          </div>
+          <button class="btn-pay" id="co-pay-empty" onclick="createOrder('empty')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><polyline points="22 7 12 7 2 7"/><line x1="12" y1="22" x2="12" y2="7"/><polyline points="15 10 12 7 9 10"/></svg>
+            Pay Now
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 4L6 9V17C6 22.5 10.4 27.7 16 29C21.6 27.7 26 22.5 26 17V9L16 4Z" fill="#2D87F0" fill-opacity="0.15" stroke="#2D87F0" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M12 16L15 19L21 13" stroke="#2D87F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>Select a payment case</h3>
+          <p>Choose a case from the sidebar to see full details, or simulate a new payment above.</p>
+          <button class="btn-pay" style="margin-top:6px" onclick="openModal()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M3 2l7 4-7 4V2z"/></svg>
+            Run Demo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Case view (hidden initially) -->
+    <div id="case-view" style="display:none"></div>
+
+    <!-- Recovery view (hidden initially) -->
+    <div id="recovery-view" style="display:none">
+      <div class="recovery-view">
+
+        <!-- Header row -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-size:20px;font-weight:800;color:var(--text-h);letter-spacing:-0.02em">⚡ Recovery Dashboard</div>
+            <div style="font-size:12.5px;color:var(--text-m);margin-top:3px">AI-driven revenue recovery — Track 03</div>
+          </div>
+          <button class="btn-batch" id="run-batch-btn" onclick="runBatchRecovery()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Run Batch Recovery
+          </button>
+        </div>
+
+        <!-- Metrics cards -->
+        <div class="metrics-grid" id="recovery-metrics">
+          <div class="metric-card"><div class="metric-label">Cases at Risk</div><div class="metric-value skel skel-title" style="height:30px;width:60px"></div></div>
+          <div class="metric-card"><div class="metric-label">Amount at Risk</div><div class="metric-value skel skel-title" style="height:30px;width:100px"></div></div>
+          <div class="metric-card"><div class="metric-label">Recovered</div><div class="metric-value skel skel-title" style="height:30px;width:80px"></div></div>
+          <div class="metric-card"><div class="metric-label">Recovery Rate</div><div class="metric-value skel skel-title" style="height:30px;width:60px"></div></div>
+        </div>
+
+        <!-- Batch result banner (hidden initially) -->
+        <div id="batch-result-banner" style="display:none"></div>
+
+        <!-- Cases at risk table -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Cases at Risk</span>
+            <span id="at-risk-count" class="badge badge-amber"></span>
+          </div>
+          <div id="at-risk-body">
+            <div class="empty-small">Loading cases...</div>
+          </div>
+        </div>
+
+        <!-- Audit trail -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recovery Audit Trail</span>
+            <button class="card-action" onclick="loadAuditTrail()">Refresh</button>
+          </div>
+          <div class="audit-list" id="audit-list">
+            <div class="empty-small">No interventions yet — run a batch recovery to start.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     DEMO MODAL
+═══════════════════════════════════════════════ -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon">🎬</div>
+      <h2>Guided Demo</h2>
+    </div>
+    <p>Watch PaymentGuard detect and investigate a suspicious transaction — fully automated in ~30 seconds.</p>
+    <div class="demo-steps">
+      <div class="dstep"><div class="dstep-n">1</div><span>User pays ₹4,999 to XYZ Electronics — payment succeeds</span></div>
+      <div class="dstep"><div class="dstep-n">2</div><span>Delivery becomes overdue — health score drops</span></div>
+      <div class="dstep"><div class="dstep-n">3</div><span>Merchant stops responding — score drops further</span></div>
+      <div class="dstep"><div class="dstep-n">4</div><span>AI investigates using real tool calls</span></div>
+      <div class="dstep"><div class="dstep-n">5</div><span>AI prepares a dispute — you approve it</span></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="runDemo()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M3 2l7 4-7 4V2z"/></svg>
+        Start Demo
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Demo progress bar -->
+<div class="demo-bar" id="demo-bar">
+  <div class="demo-bar-label" id="demo-label">Running demo...</div>
+  <div class="demo-bar-track"><div class="demo-bar-fill" id="demo-fill" style="width:0%"></div></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════ -->
+<script>
+const API = 'http://localhost:8000/api';
+let activeCase = null, activeTx = null, allCases = [];
+
+/* ─── Helpers ──────────────────────────────────── */
+const scoreColor = s => s >= 80 ? 'var(--green)' : s >= 50 ? 'var(--amber)' : 'var(--red)';
+const scoreBadge = s => s >= 80 ? 'badge-green' : s >= 50 ? 'badge-amber' : 'badge-red';
+const riskBadge  = r => ({low:'badge-green', medium:'badge-amber', high:'badge-red'})[r] || 'badge-green';
+const statusLabel = s => s >= 80 ? 'Healthy' : s >= 50 ? 'Needs Attention' : 'Action Required';
+const statusColor = r => ({low:'status-green', medium:'status-amber', high:'status-red'})[r] || 'status-green';
+
+function fmtMoney(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
+function fmtDate(iso) {
+  return new Date(iso).toLocaleString('en-IN', {dateStyle:'medium', timeStyle:'short'});
+}
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff/60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m/60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h/24)}d ago`;
+}
+
+function evtInfo(t) {
+  const m = {
+    payment_success:      ['✅','Payment Successful'],
+    payment_failed:       ['❌','Payment Failed'],
+    order_confirmed:      ['📦','Order Confirmed'],
+    order_cancelled:      ['🚫','Order Cancelled'],
+    delivery_delayed:     ['⏳','Delivery Delayed'],
+    delivery_completed:   ['🚚','Delivered'],
+    refund_initiated:     ['🔄','Refund Initiated'],
+    refund_completed:     ['✅','Refund Received'],
+    refund_delayed:       ['⚠️','Refund Delayed'],
+    merchant_unresponsive:['🔇','Merchant Unresponsive'],
+    suspicious_activity:  ['🚨','Suspicious Activity'],
+    dispute_opened:       ['⚖️','Dispute Opened'],
+    support_contacted:    ['📞','Support Contacted'],
+  };
+  return m[t] || ['•', t.replace(/_/g,' ')];
+}
+
+function nodeColor(t) {
+  if (/success|complete|resolved|confirmed|delivered/.test(t)) return 'var(--green)';
+  if (/delay|unresponsive|suspicious/.test(t)) return 'var(--amber)';
+  if (/fail|cancel/.test(t)) return 'var(--red)';
+  return 'var(--blue)';
+}
+
+let _toastTimer;
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast toast-${type} show`;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+/* ─── Nav tabs ─────────────────────────────────── */
+function setTab(btn, tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+
+  const emptyView    = document.getElementById('empty-view');
+  const caseView     = document.getElementById('case-view');
+  const recoveryView = document.getElementById('recovery-view');
+
+  if (tab === 'recovery') {
+    if (emptyView)    emptyView.style.display    = 'none';
+    if (caseView)     caseView.style.display      = 'none';
+    if (recoveryView) recoveryView.style.display  = 'block';
+    loadRecoveryDashboard();
+  } else {
+    if (recoveryView) recoveryView.style.display = 'none';
+    // Restore appropriate view
+    if (activeCase) {
+      if (caseView)  caseView.style.display  = 'block';
+      if (emptyView) emptyView.style.display = 'none';
+    } else {
+      if (emptyView) emptyView.style.display = 'block';
+      if (caseView)  caseView.style.display  = 'none';
+    }
+  }
+}
+
+/* ─── Notifications ─────────────────────────────── */
+let notifData = [];
+
+async function loadNotifications() {
+  try {
+    const data = await fetch(`${API}/notifications`).then(r => r.json());
+    notifData = Array.isArray(data) ? data : (data.notifications || []);
+    renderNotifications();
+  } catch {
+    // silently fail — server may not have this endpoint
+    notifData = [];
+    renderNotifications();
+  }
+}
+
+function renderNotifications() {
+  const list = document.getElementById('notif-list');
+  const badge = document.getElementById('notif-badge');
+  const unread = notifData.filter(n => !n.read).length;
+
+  if (unread > 0) {
+    badge.textContent = unread > 9 ? '9+' : unread;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+
+  if (!notifData.length) {
+    list.innerHTML = '<div class="notif-empty">No notifications</div>';
+    return;
+  }
+
+  list.innerHTML = notifData.map((n, i) => {
+    const dotColor = n.severity === 'critical' ? 'var(--red)'
+                   : n.severity === 'warning'  ? 'var(--amber)'
+                   : 'var(--green)';
+    const amtStr = n.amount ? ` · ${fmtMoney(n.amount)}` : '';
+    return `
+      <div class="notif-item" onclick="notifClick(${i})">
+        <div class="notif-dot" style="background:${dotColor}"></div>
+        <div class="notif-content">
+          <div class="notif-msg">${n.message || n.msg || ''}</div>
+          <div class="notif-meta">${amtStr}${amtStr?'  ':''}${n.created_at ? timeAgo(n.created_at) : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function notifClick(idx) {
+  const n = notifData[idx];
+  n.read = true;
+  renderNotifications();
+  closeNotifPanel();
+  if (n.case_id) openCase(n.case_id);
+}
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notif-panel');
+  panel.classList.toggle('open');
+}
+function closeNotifPanel() {
+  document.getElementById('notif-panel').classList.remove('open');
+}
+function markAllRead() {
+  notifData.forEach(n => n.read = true);
+  renderNotifications();
+}
+
+// Close notification panel on outside click
+document.addEventListener('click', e => {
+  const wrap = document.querySelector('.notif-wrap');
+  if (wrap && !wrap.contains(e.target)) closeNotifPanel();
+});
+
+/* ─── Sidebar load ─────────────────────────────── */
+async function loadSidebar() {
+  try {
+    const cases = await fetch(`${API}/cases`).then(r => r.json());
+    allCases = Array.isArray(cases) ? cases : [];
+    renderSidebar(allCases);
+  } catch {
+    document.getElementById('case-scroll').innerHTML =
+      '<div style="padding:16px;font-size:12.5px;color:var(--text-m)">Could not load cases. Is the server running?</div>';
+  }
+}
+
+function renderSidebar(cases) {
+  // Update stat counters using full allCases (not filtered)
+  const src = cases === allCases ? allCases : allCases;
+  document.getElementById('s-total').textContent = allCases.length;
+  document.getElementById('s-watch').textContent = allCases.filter(c => c.status === 'needs_attention').length;
+  document.getElementById('s-crit').textContent  = allCases.filter(c => c.status === 'action_required').length;
+
+  const scroll = document.getElementById('case-scroll');
+
+  if (!cases.length) {
+    scroll.innerHTML = '<div style="padding:16px 8px;font-size:12.5px;color:var(--text-m);text-align:center">No cases found</div>';
+    return;
+  }
+
+  // Group cases by status
+  const groups = [
+    {
+      key: 'action_required',
+      label: 'Action Required',
+      dot: 'var(--red)',
+      countStyle: 'color:var(--red);background:var(--red-light);border-color:var(--red-border)',
+      cases: cases.filter(c => c.status === 'action_required'),
+      open: true,
+    },
+    {
+      key: 'needs_attention',
+      label: 'Needs Attention',
+      dot: 'var(--amber)',
+      countStyle: 'color:var(--amber);background:var(--amber-light);border-color:var(--amber-border)',
+      cases: cases.filter(c => c.status === 'needs_attention'),
+      open: true,
+    },
+    {
+      key: 'monitoring',
+      label: 'Monitoring',
+      dot: 'var(--blue)',
+      countStyle: 'color:var(--blue);background:var(--blue-light);border-color:#93C5FD',
+      cases: cases.filter(c => c.status === 'monitoring'),
+      open: false,   // collapsed by default — least urgent
+    },
+    {
+      key: 'resolved',
+      label: 'Resolved',
+      dot: 'var(--green)',
+      countStyle: 'color:var(--green);background:var(--green-light);border-color:var(--green-border)',
+      cases: cases.filter(c => c.status === 'resolved'),
+      open: false,
+    },
+  ].filter(g => g.cases.length > 0);
+
+  scroll.innerHTML = '';
+
+  groups.forEach(group => {
+    const groupId = `group-${group.key}`;
+    const bodyId  = `body-${group.key}`;
+
+    // Group header
+    const header = document.createElement('div');
+    header.className = 'group-header';
+    header.innerHTML = `
+      <div class="group-header-left">
+        <div class="group-dot" style="background:${group.dot}"></div>
+        <span class="group-label" style="color:${group.dot}">${group.label}</span>
+        <span class="group-count" style="${group.countStyle}">${group.cases.length}</span>
+      </div>
+      <span class="group-toggle ${group.open ? '' : 'collapsed'}" id="toggle-${group.key}">▾</span>`;
+    header.addEventListener('click', () => toggleGroup(group.key));
+    scroll.appendChild(header);
+
+    // Group body
+    const body = document.createElement('div');
+    body.className = `group-body ${group.open ? '' : 'collapsed'}`;
+    body.id = bodyId;
+    body.style.maxHeight = group.open ? `${group.cases.length * 40}px` : '0';
+
+    const inner = document.createElement('div');
+    inner.style.cssText = 'display:flex;flex-direction:column;padding:0 4px 6px';
+
+    group.cases.forEach(c => {
+      const el = document.createElement('div');
+      el.className = `case-item-compact ${statusColor(c.risk_level)}`;
+      el.dataset.id = c.case_id;
+      if (c.case_id === activeCase) el.classList.add('active');
+      el.innerHTML = `
+        <span class="ci-c-name" title="${c.merchant}">${c.merchant}</span>
+        <span class="ci-c-amt">${fmtMoney(c.amount)}</span>
+        <span class="ci-c-score" style="color:${scoreColor(c.health_score)}">${c.health_score}</span>`;
+      el.addEventListener('click', () => {
+        openCase(c.case_id);
+        document.getElementById('sidebar').classList.remove('mobile-open');
+      });
+      inner.appendChild(el);
+    });
+
+    body.appendChild(inner);
+    scroll.appendChild(body);
+  });
+}
+
+function toggleGroup(key) {
+  const body   = document.getElementById(`body-${key}`);
+  const toggle = document.getElementById(`toggle-${key}`);
+  const isOpen = !body.classList.contains('collapsed');
+  if (isOpen) {
+    body.style.maxHeight = body.scrollHeight + 'px';
+    requestAnimationFrame(() => {
+      body.style.maxHeight = '0';
+      body.classList.add('collapsed');
+      toggle.classList.add('collapsed');
+    });
+  } else {
+    body.classList.remove('collapsed');
+    toggle.classList.remove('collapsed');
+    // count items × ~38px per item
+    const items = body.querySelectorAll('.case-item-compact').length;
+    body.style.maxHeight = (items * 40 + 10) + 'px';
+  }
+}
+
+function filterCases(query) {
+  const q = query.toLowerCase().trim();
+  if (!q) { renderSidebar(allCases); return; }
+  renderSidebar(allCases.filter(c =>
+    c.merchant.toLowerCase().includes(q) ||
+    String(c.case_id).includes(q) ||
+    String(c.amount).includes(q)
+  ));
+}
+
+/* ─── Score ring ───────────────────────────────── */
+function ring(score) {
+  const r = 35, cx = 44, cy = 44, circ = 2 * Math.PI * r;
+  const dash = (score / 100) * circ;
+  const col = scoreColor(score);
+  return `
+    <div class="score-wrap">
+      <div class="ring-svg">
+        <svg width="88" height="88" viewBox="0 0 88 88">
+          <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="6"/>
+          <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="6"
+            stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round"
+            style="transform:rotate(-90deg);transform-origin:44px 44px"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-num" style="color:${col}">${score}</div>
+          <div class="ring-den">/ 100</div>
+        </div>
+      </div>
+      <span class="badge ${scoreBadge(score)}">${statusLabel(score)}</span>
+    </div>`;
+}
+
+/* ─── Timeline ─────────────────────────────────── */
+function renderTimeline(events) {
+  if (!events || !events.length)
+    return '<p class="empty-small">No events yet.</p>';
+  return events.map((e, i) => {
+    const [icon, name] = evtInfo(e.event_type);
+    const col = nodeColor(e.event_type);
+    const extra = Object.keys(e.event_data || {}).length
+      ? Object.entries(e.event_data).map(([k, v]) => `${k.replace(/_/g,' ')}: ${v}`).join(' · ')
+      : '';
+    return `<div class="tl-row">
+      <div class="tl-gutter">
+        <div class="tl-node" style="border-color:${col};background:${col}18;color:${col};font-size:11px">${icon}</div>
+        ${i < events.length - 1 ? '<div class="tl-connector"></div>' : ''}
+      </div>
+      <div class="tl-body">
+        <div class="tl-name">${name}</div>
+        <div class="tl-when">${fmtDate(e.timestamp)}</div>
+        ${extra ? `<span class="tl-detail">${extra}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ─── Open case ────────────────────────────────── */
+async function openCase(id) {
+  activeCase = id;
+
+  // Highlight sidebar item
+  document.querySelectorAll('.case-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.case-item[data-id="${id}"]`)?.classList.add('active');
+
+  // Hide empty view, show case view
+  document.getElementById('empty-view').style.display = 'none';
+  const caseView = document.getElementById('case-view');
+  caseView.style.display = 'block';
+
+  // Skeleton while loading
+  caseView.innerHTML = `
+    <div class="case-view">
+      <div class="card checkout-card">
+        <div class="card-header" style="margin-bottom:0">
+          <span class="card-title" style="color:var(--blue)">Simulate New Payment</span>
+          <button class="card-action" onclick="toggleCheckout()">▾ Collapse</button>
+        </div>
+      </div>
+      <div class="card hero-card">
+        <div class="hero-top">
+          <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+            <div class="skel skel-title"></div>
+            <div style="display:flex;gap:8px">
+              ${[1,2,3].map(()=>`<div class="skel skel-line" style="width:100px"></div>`).join('')}
+            </div>
+          </div>
+          <div class="skel skel-circle"></div>
+        </div>
+      </div>
+      <div class="skel-card">
+        <div class="skel skel-short"></div>
+        ${[1,2,3].map(()=>`<div class="skel skel-line"></div>`).join('')}
+      </div>
+      <div class="skel-card">
+        <div class="skel skel-short"></div>
+        ${[1,2,3,4].map(()=>`<div class="skel skel-line"></div>`).join('')}
+      </div>
+    </div>`;
+
+  let c;
+  try {
+    c = await fetch(`${API}/cases/${id}`).then(r => r.json());
+  } catch {
+    caseView.innerHTML = `<div class="case-view"><div class="card"><div class="empty-state">
+      <div class="empty-icon">⚠️</div>
+      <h3>Could not load case</h3>
+      <p>Make sure the server is running on port 8000.</p>
+    </div></div></div>`;
+    return;
+  }
+
+  activeTx = c.transaction_id;
+  const isResolved = c.status === 'resolved' || c.health_score === 100;
+
+  caseView.innerHTML = `
+  <div class="case-view">
+
+    <!-- Simulate New Payment (collapsible) -->
+    <div class="card checkout-card" id="checkout-collapsible">
+      <div class="card-header" style="margin-bottom:0">
+        <span class="card-title" style="color:var(--blue);display:flex;align-items:center;gap:6px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Simulate New Payment
+        </span>
+        <button class="card-action" id="checkout-toggle-btn" onclick="toggleCheckout()" style="font-size:13px">▾</button>
+      </div>
+      <div class="checkout-body" id="checkout-body" style="max-height:80px;margin-top:12px">
+        <div class="checkout-form">
+          <div class="checkout-field">
+            <label for="co-merchant-case">Merchant Name</label>
+            <input class="checkout-input" id="co-merchant-case" type="text" placeholder="e.g. Flipkart" />
+          </div>
+          <div class="checkout-field" style="max-width:160px">
+            <label for="co-amount-case">Amount (₹)</label>
+            <input class="checkout-input" id="co-amount-case" type="number" placeholder="e.g. 2999" min="1" />
+          </div>
+          <button class="btn-pay" id="co-pay-case" onclick="createOrder('case')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><polyline points="22 7 12 7 2 7"/><line x1="12" y1="22" x2="12" y2="7"/><polyline points="15 10 12 7 9 10"/></svg>
+            Pay Now
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero card -->
+    <div class="card hero-card">
+      <div class="hero-top">
+        <div class="hero-left">
+          <div class="hero-merchant">${c.merchant}</div>
+          <div class="hero-meta">
+            <span class="meta-tag">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              Case #${c.case_id}
+            </span>
+            <span class="meta-tag">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              ${fmtMoney(c.amount)} ${c.currency || 'INR'}
+            </span>
+            <span class="meta-tag">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              ${(c.case_type || '').replace(/_/g,' ')}
+            </span>
+            <span class="badge ${riskBadge(c.risk_level)}">${c.risk_level || 'low'} risk</span>
+          </div>
+          <div class="hero-actions">
+            <button class="btn-resolve ${isResolved ? 'resolved' : ''}" id="resolve-btn"
+              onclick="markResolved()" ${isResolved ? 'disabled' : ''}>
+              ${isResolved ? '✓ Resolved' : '✓ Mark Resolved'}
+            </button>
+          </div>
+        </div>
+        ${ring(c.health_score)}
+      </div>
+    </div>
+
+    <!-- Score breakdown -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Score Breakdown</span>
+      </div>
+      <div class="breakdown-list">
+        ${c.score_reasons && c.score_reasons.length
+          ? c.score_reasons.map(r => {
+              const pos = r.startsWith('+');
+              const pts = r.match(/[+\-]\d+/)?.[0] || '';
+              const label = r.replace(/[+\-]\d+ pts/g, '').replace(/^[+\-] /, '').trim();
+              return `<div class="breakdown-item ${pos ? 'pos' : 'neg'}">
+                <span class="bd-icon">${pos ? '✅' : '⚠️'}</span>
+                <span class="bd-label">${label}</span>
+                <span class="bd-pts" style="color:${pos ? 'var(--green)' : 'var(--red)'}">${pts}</span>
+              </div>`;
+            }).join('')
+          : '<p class="empty-small">No scoring factors — payment looks healthy.</p>'
+        }
+      </div>
+    </div>
+
+    <!-- Payment Lifecycle -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Payment Lifecycle</span>
+        <span class="badge badge-blue">${(c.timeline || []).length} events</span>
+      </div>
+      <div class="tl" id="tl">${renderTimeline(c.timeline)}</div>
+    </div>
+
+    <!-- Simulate Events -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Simulate Events</span>
+      </div>
+      <div class="sim-grid">
+        <button class="sim-btn warn"   onclick="sim('delivery_delayed',{days_overdue:3})">⏳ Delivery Delayed</button>
+        <button class="sim-btn warn"   onclick="sim('merchant_unresponsive',{attempts:1})">🔇 Merchant Unresponsive</button>
+        <button class="sim-btn warn"   onclick="sim('refund_initiated',{expected_days:7})">🔄 Refund Initiated</button>
+        <button class="sim-btn warn"   onclick="sim('refund_delayed',{days_overdue:3})">⚠️ Refund Delayed</button>
+        <button class="sim-btn good"   onclick="sim('refund_completed',{})">✅ Refund Received</button>
+        <button class="sim-btn good"   onclick="sim('delivery_completed',{})">🚚 Delivered</button>
+        <button class="sim-btn danger" onclick="sim('suspicious_activity',{signals:['unusual_amount']})">🚨 Suspicious Activity</button>
+        <button class="sim-btn"        onclick="sim('support_contacted',{})">📞 Support Contacted</button>
+      </div>
+    </div>
+
+    <!-- Pending approvals -->
+    <div class="card" id="approvals-card">
+      <div class="card-header">
+        <span class="card-title">
+          <span style="color:var(--amber)">⚠</span> Pending Approvals
+        </span>
+        <span id="approvals-count" class="badge badge-amber" style="display:none"></span>
+      </div>
+      <div id="approvals-body"><p class="empty-small">No pending actions</p></div>
+    </div>
+
+    <!-- AI Guardian chat -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          AI Guardian
+        </span>
+        <span class="badge badge-green">Live</span>
+      </div>
+      <div class="chat-shell">
+        <div class="chat-log" id="chat-log">
+          <div class="msg msg-ai">Hi — I'm your AI Payment Guardian. Ask me anything about this payment case. I investigate using live data, not guesswork.</div>
+        </div>
+        <div class="chat-input-area">
+          <input class="chat-in" id="chat-in"
+            placeholder="e.g. Why hasn't my refund arrived?"
+            onkeydown="if(event.key==='Enter')sendChat()" />
+          <button class="btn-send" id="send-btn" onclick="sendChat()">
+            Send
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="quick-row">
+          <button class="quick" onclick="quickAsk('What happened with this payment?')">What happened?</button>
+          <button class="quick" onclick="quickAsk('What should I do next?')">What to do?</button>
+          <button class="quick" onclick="quickAsk('Is my refund overdue?')">Refund overdue?</button>
+          <button class="quick" onclick="quickAsk('Prepare a dispute request for this case.')">Prepare dispute</button>
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+
+  refreshApprovals();
+}
+
+/* ─── Checkout / Create order ──────────────────── */
+let checkoutCollapsed = false;
+
+function toggleCheckout() {
+  const body = document.getElementById('checkout-body');
+  const btn = document.getElementById('checkout-toggle-btn');
+  if (!body) return;
+  checkoutCollapsed = !checkoutCollapsed;
+  if (checkoutCollapsed) {
+    body.style.maxHeight = '0';
+    body.style.marginTop = '0';
+    body.style.overflow = 'hidden';
+    if (btn) btn.textContent = '▸';
+  } else {
+    body.style.maxHeight = '80px';
+    body.style.marginTop = '12px';
+    body.style.overflow = '';
+    if (btn) btn.textContent = '▾';
+  }
+}
+
+async function createOrder(ctx) {
+  const merchantInput = document.getElementById(`co-merchant-${ctx}`);
+  const amountInput   = document.getElementById(`co-amount-${ctx}`);
+  const payBtn        = document.getElementById(`co-pay-${ctx}`);
+
+  const merchant = merchantInput?.value.trim();
+  const amount   = parseFloat(amountInput?.value);
+
+  if (!merchant) { toast('Enter a merchant name', 'warn'); merchantInput?.focus(); return; }
+  if (!amount || amount <= 0) { toast('Enter a valid amount', 'warn'); amountInput?.focus(); return; }
+
+  payBtn.disabled = true;
+  payBtn.textContent = 'Processing…';
+
+  try {
+    const data = await fetch(`${API}/razorpay/create-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ merchant, amount })
+    }).then(r => r.json());
+
+    toast(`✅ Payment of ${fmtMoney(amount)} to ${merchant} created!`, 'ok');
+    merchantInput.value = '';
+    amountInput.value = '';
+
+    await loadSidebar();
+
+    // Auto-open the new case
+    const newId = data.case_id || data.id;
+    if (newId) setTimeout(() => openCase(newId), 400);
+    else await loadSidebar();
+
+  } catch (e) {
+    toast('Could not create payment — is the server running?', 'err');
+  } finally {
+    if (payBtn) { payBtn.disabled = false; payBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><polyline points="22 7 12 7 2 7"/><line x1="12" y1="22" x2="12" y2="7"/><polyline points="15 10 12 7 9 10"/></svg> Pay Now`; }
+  }
+}
+
+/* ─── Simulate event ───────────────────────────── */
+async function sim(type, data) {
+  try {
+    const r = await fetch(`${API}/cases/${activeCase}/simulate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_type: type, event_data: data })
+    }).then(r => r.json());
+    const [icon] = evtInfo(type);
+    toast(`${icon} Event added · Health: ${r.new_health_score}/100`);
+    await openCase(activeCase);
+    await loadSidebar();
+  } catch {
+    toast('Could not simulate event', 'err');
+  }
+}
+
+/* ─── Mark resolved ────────────────────────────── */
+async function markResolved() {
+  if (!activeCase) return;
+  try {
+    const r = await fetch(`${API}/cases/${activeCase}/resolve`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    }).then(r => r.json());
+
+    toast('✅ Case marked as resolved!', 'ok');
+    await openCase(activeCase);
+    await loadSidebar();
+  } catch {
+    toast('Could not resolve case — server error', 'err');
+  }
+}
+
+/* ─── Markdown → HTML ──────────────────────────── */
+function mdToHtml(text) {
+  // Escape HTML
+  let t = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Tables
+  t = t.replace(/(\|.+\|\n)([ \t]*\|[-:| \t]+\|\n)((?:[ \t]*\|.+\|\n?)+)/gm, (_, head, _sep, body) => {
+    const ths  = head.split('|').filter(s => s.trim()).map(s => `<th>${s.trim()}</th>`).join('');
+    const rows = body.trim().split('\n').map(row => {
+      const cells = row.split('|').filter(s => s.trim()).map(s => `<td>${s.trim()}</td>`).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    return `<table><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table>`;
+  });
+
+  // Headings
+  t = t.replace(/^### (.+)$/gm, '<strong style="font-size:13px;display:block;margin:8px 0 3px;color:var(--text-h)">$1</strong>');
+  t = t.replace(/^## (.+)$/gm,  '<strong style="font-size:13.5px;display:block;margin:10px 0 4px;color:var(--text-h)">$1</strong>');
+  t = t.replace(/^# (.+)$/gm,   '<strong style="font-size:14px;display:block;margin:10px 0 4px;color:var(--text-h)">$1</strong>');
+
+  // Bold & italic
+  t = t.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // Inline code
+  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Bullet lists
+  t = t.replace(/((?:^[-*•] .+\n?)+)/gm, match => {
+    const items = match.trim().split('\n').map(l => `<li>${l.replace(/^[-*•] /, '')}</li>`).join('');
+    return `<ul style="padding-left:16px;margin:5px 0;display:flex;flex-direction:column;gap:3px">${items}</ul>`;
+  });
+
+  // Numbered lists
+  t = t.replace(/((?:^\d+\. .+\n?)+)/gm, match => {
+    const items = match.trim().split('\n').map(l => `<li>${l.replace(/^\d+\. /, '')}</li>`).join('');
+    return `<ol style="padding-left:16px;margin:5px 0;display:flex;flex-direction:column;gap:3px">${items}</ol>`;
+  });
+
+  // Line breaks
+  t = t.replace(/\n{3,}/g, '\n\n');
+  t = t.replace(/\n\n/g, '<br><br>');
+  t = t.replace(/\n/g, '<br>');
+  t = t.replace(/(<\/(?:table|ul|ol|strong|div)>)<br>/g, '$1');
+
+  return t;
+}
+
+/* ─── Chat ─────────────────────────────────────── */
+async function sendChat() {
+  const inp = document.getElementById('chat-in');
+  const btn = document.getElementById('send-btn');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  btn.disabled = true;
+  addChatMsg(msg, 'user');
+  const dot = addTypingIndicator();
+  try {
+    const d = await fetch(`${API}/agent/query`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, case_id: activeCase, transaction_id: activeTx })
+    }).then(r => r.json());
+    dot.remove();
+    addChatMsg(d.response, 'ai');
+    if (d.pending_actions?.length) {
+      toast('⚠️ Action prepared — approval required', 'warn');
+      refreshApprovals();
+    }
+  } catch {
+    dot.remove();
+    addChatMsg('Could not reach the server. Make sure it is running on port 8000.', 'ai');
+  }
+  btn.disabled = false;
+  inp.focus();
+}
+
+function quickAsk(msg) {
+  const inp = document.getElementById('chat-in');
+  if (inp) inp.value = msg;
+  sendChat();
+}
+
+function addChatMsg(text, role) {
+  const log = document.getElementById('chat-log');
+  if (!log) return null;
+  const d = document.createElement('div');
+  d.className = `msg msg-${role}`;
+  d.innerHTML = role === 'ai' ? mdToHtml(text) : escapeHtml(text);
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  return d;
+}
+
+function addTypingIndicator() {
+  const log = document.getElementById('chat-log');
+  if (!log) return { remove: () => {} };
+  const d = document.createElement('div');
+  d.className = 'typing';
+  d.innerHTML = '<span></span><span></span><span></span>';
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  return d;
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ─── Pending approvals ────────────────────────── */
+async function refreshApprovals() {
+  const body = document.getElementById('approvals-body');
+  const countBadge = document.getElementById('approvals-count');
+  if (!body) return;
+
+  let actions = [];
+  try {
+    const all = await fetch(`${API}/actions/pending`).then(r => r.json());
+    actions = (Array.isArray(all) ? all : []).filter(a => a.case_id === activeCase);
+  } catch { /* server might not support */ }
+
+  if (countBadge) {
+    if (actions.length > 0) {
+      countBadge.textContent = `${actions.length} pending`;
+      countBadge.style.display = 'inline-flex';
+    } else {
+      countBadge.style.display = 'none';
+    }
+  }
+
+  if (!actions.length) {
+    body.innerHTML = '<p class="empty-small">No pending actions for this case</p>';
+    return;
+  }
+
+  body.innerHTML = `
+    <table class="action-table">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Reason</th>
+          <th style="text-align:right">Decision</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${actions.map(a => `
+          <tr class="action-row">
+            <td><div class="action-name">${a.action.replace(/_/g,' ')}</div></td>
+            <td><div class="action-reason">${a.reason}</div></td>
+            <td>
+              <div class="action-btns">
+                <button class="act-yes" onclick="approve(${a.action_id},true)">✓ Approve</button>
+                <button class="act-no"  onclick="approve(${a.action_id},false)">✕ Reject</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+async function approve(id, yes) {
+  try {
+    const d = await fetch(`${API}/actions/${id}/approve`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ approved: yes })
+    }).then(r => r.json());
+    toast(d.message || (yes ? 'Action approved' : 'Action rejected'), yes ? 'ok' : 'warn');
+    refreshApprovals();
+  } catch {
+    toast('Could not process action', 'err');
+  }
+}
+
+/* ─── Demo ──────────────────────────────────────── */
+function openModal()  { document.getElementById('overlay').classList.add('open'); }
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+
+function setDemoProgress(pct, label) {
+  document.getElementById('demo-fill').style.width  = pct + '%';
+  document.getElementById('demo-label').textContent = label;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function runDemo() {
+  closeModal();
+  const bar = document.getElementById('demo-bar');
+  bar.classList.add('open');
+
+  setDemoProgress(5, 'Step 1/5 — Loading payment case…');
+  await openCase(1);
+  await loadSidebar();
+  toast('💳 ₹4,999 paid to XYZ Electronics — successful', 'info');
+  await sleep(2000);
+
+  setDemoProgress(25, 'Step 2/5 — Delivery becoming overdue…');
+  await sim('delivery_delayed', { days_overdue: 5, status: 'In transit' });
+  toast('⏳ Delivery is 5 days overdue — score dropped!', 'warn');
+  await sleep(2000);
+
+  setDemoProgress(45, 'Step 3/5 — Merchant stops responding…');
+  await sim('merchant_unresponsive', { attempts: 2 });
+  toast('🔇 Merchant unresponsive — score dropped further!', 'warn');
+  await sleep(2000);
+
+  setDemoProgress(65, 'Step 4/5 — AI investigating…');
+  document.getElementById('chat-log')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  await sleep(600);
+  const inp = document.getElementById('chat-in');
+  if (inp) inp.value = 'What happened with this payment and what should I do?';
+  await sendChat();
+  await sleep(5000);
+
+  setDemoProgress(85, 'Step 5/5 — Preparing dispute…');
+  await sleep(600);
+  const inp2 = document.getElementById('chat-in');
+  if (inp2) inp2.value = 'Prepare a dispute request for this case.';
+  await sendChat();
+  await sleep(4000);
+
+  setDemoProgress(100, '✅ Demo complete!');
+  toast('🎬 Demo done — approve or reject the action above', 'ok');
+  await sleep(2500);
+  bar.classList.remove('open');
+}
+
+/* ─── Recovery Dashboard ────────────────────────── */
+
+async function loadRecoveryDashboard() {
+  await Promise.all([loadRecoveryMetrics(), loadAtRiskCases(), loadAuditTrail()]);
+}
+
+async function loadRecoveryMetrics() {
+  const container = document.getElementById('recovery-metrics');
+  try {
+    const data = await fetch(`${API}/recovery/metrics`).then(r => r.json());
+    const o = data.overview || {};
+    container.innerHTML = `
+      <div class="metric-card amber">
+        <div class="metric-label">Cases at Risk</div>
+        <div class="metric-value">${o.cases_at_risk ?? '—'}</div>
+        <div class="metric-sub">${o.total_cases ?? 0} total cases</div>
+      </div>
+      <div class="metric-card red">
+        <div class="metric-label">Amount at Risk</div>
+        <div class="metric-value" style="font-size:20px">${fmtMoney(o.amount_at_risk ?? 0)}</div>
+        <div class="metric-sub">Across ${o.cases_at_risk ?? 0} cases</div>
+      </div>
+      <div class="metric-card green">
+        <div class="metric-label">Amount Recovered</div>
+        <div class="metric-value" style="font-size:20px">${fmtMoney(o.amount_recovered ?? 0)}</div>
+        <div class="metric-sub">${o.successful_recoveries ?? 0} successful</div>
+      </div>
+      <div class="metric-card blue">
+        <div class="metric-label">Recovery Rate</div>
+        <div class="metric-value">${o.recovery_rate_percent ?? 0}%</div>
+        <div class="metric-sub">${o.total_interventions ?? 0} interventions</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Cases Resolved</div>
+        <div class="metric-value">${o.cases_resolved ?? '—'}</div>
+        <div class="metric-sub">All time</div>
+      </div>`;
+  } catch {
+    container.innerHTML = `<div class="metric-card"><div class="metric-label">Error</div><div class="metric-sub">Could not load metrics</div></div>`;
+  }
+}
+
+async function loadAtRiskCases() {
+  const body = document.getElementById('at-risk-body');
+  const countEl = document.getElementById('at-risk-count');
+  try {
+    const cases = await fetch(`${API}/recovery/cases`).then(r => r.json());
+    if (countEl) countEl.textContent = `${cases.length} cases`;
+
+    if (!cases.length) {
+      body.innerHTML = '<p class="empty-small">No cases at risk right now 🎉</p>';
+      return;
+    }
+
+    body.innerHTML = `
+      <table class="at-risk-table">
+        <thead><tr>
+          <th>Merchant</th>
+          <th>Amount</th>
+          <th>Type</th>
+          <th>Health</th>
+          <th>Interventions</th>
+          <th>Next Channel</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody>
+          ${cases.map(c => `
+            <tr onclick="switchToCaseView(${c.case_id})">
+              <td><strong>${c.merchant}</strong></td>
+              <td>${fmtMoney(c.amount)}</td>
+              <td><span class="badge badge-purple">${(c.case_type||'').replace(/_/g,' ')}</span></td>
+              <td>
+                <span style="color:${scoreColor(c.health_score)};font-weight:700">${c.health_score}</span>
+                <span style="color:var(--text-d)">/100</span>
+              </td>
+              <td style="text-align:center">
+                <span class="badge ${c.should_stop ? 'badge-red' : 'badge-blue'}">${c.total_interventions}/${c.should_stop?'stopped':'3 max'}</span>
+              </td>
+              <td><span class="badge badge-blue">${c.next_channel}</span></td>
+              <td><span class="badge ${c.should_stop ? 'badge-red' : 'badge-amber'}">${c.should_stop ? 'Stopped' : 'Active'}</span></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch {
+    body.innerHTML = '<p class="empty-small">Could not load at-risk cases</p>';
+  }
+}
+
+async function loadAuditTrail() {
+  const list = document.getElementById('audit-list');
+  try {
+    const data = await fetch(`${API}/recovery/audit`).then(r => r.json());
+    const items = data.audit_trail || [];
+
+    if (!items.length) {
+      list.innerHTML = '<div class="empty-small">No interventions yet — run a batch recovery to start.</div>';
+      return;
+    }
+
+    const outcomeIcon = {
+      recovered: '✅', pending: '⏳', failed: '❌',
+      escalated: '⚖️', stopped: '🛑',
+    };
+
+    list.innerHTML = items.map(i => `
+      <div class="audit-item ${i.outcome}">
+        <div class="audit-icon">${outcomeIcon[i.outcome] || '•'}</div>
+        <div class="audit-body">
+          <div class="audit-title">${i.merchant} · ${i.intervention_type.replace(/_/g,' ')} via ${i.channel}</div>
+          <div class="audit-meta">Case #${i.case_id} · Attempt ${i.attempt_number} · ${timeAgo(i.created_at)}</div>
+          ${i.message_preview ? `<div class="audit-msg">"${i.message_preview}"</div>` : ''}
+        </div>
+        <div class="audit-right">
+          ${i.amount_recovered > 0 ? `<div class="audit-amount">+${fmtMoney(i.amount_recovered)}</div>` : ''}
+          <div class="audit-time">${fmtDate(i.created_at)}</div>
+        </div>
+      </div>`).join('');
+  } catch {
+    list.innerHTML = '<div class="empty-small">Could not load audit trail</div>';
+  }
+}
+
+async function runBatchRecovery() {
+  const btn = document.getElementById('run-batch-btn');
+  const banner = document.getElementById('batch-result-banner');
+  btn.disabled = true;
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Running...`;
+
+  // Add spin animation
+  const style = document.createElement('style');
+  style.textContent = '@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+  document.head.appendChild(style);
+
+  banner.style.display = 'none';
+  toast('⚡ Batch recovery running across all at-risk cases...', 'info');
+
+  try {
+    const data = await fetch(`${API}/recovery/batch`, { method: 'POST' }).then(r => r.json());
+    const m = data.metrics || {};
+
+    banner.style.display = 'block';
+    banner.innerHTML = `
+      <div class="card" style="border-color:var(--green-border);background:var(--green-light)">
+        <div style="font-size:14px;font-weight:700;color:var(--green);margin-bottom:12px">
+          ✅ Batch #${data.batch_id} Complete
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+          <div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-d)">Cases Processed</div>
+               <div style="font-size:22px;font-weight:800;color:var(--text-h)">${m.total_cases_processed}</div></div>
+          <div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-d)">Recovered</div>
+               <div style="font-size:22px;font-weight:800;color:var(--green)">${m.recovered_cases}</div></div>
+          <div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-d)">Recovery Rate</div>
+               <div style="font-size:22px;font-weight:800;color:var(--blue)">${m.recovery_rate_percent}%</div></div>
+          <div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-d)">Amount Recovered</div>
+               <div style="font-size:20px;font-weight:800;color:var(--green)">${fmtMoney(m.total_amount_recovered)}</div></div>
+          <div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-d)">Still at Risk</div>
+               <div style="font-size:20px;font-weight:800;color:var(--red)">${fmtMoney(m.amount_still_at_risk)}</div></div>
+        </div>
+      </div>`;
+
+    toast(`✅ Batch done — ${m.recovered_cases} recovered, ${fmtMoney(m.total_amount_recovered)} recovered!`, 'ok');
+    await loadRecoveryDashboard();
+  } catch (e) {
+    toast('Batch recovery failed — check server logs', 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Run Batch Recovery`;
+  }
+}
+
+function switchToCaseView(caseId) {
+  // Switch nav tab to dashboard
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab')[0].classList.add('active');
+  // Hide recovery view
+  document.getElementById('recovery-view').style.display = 'none';
+  document.getElementById('empty-view').style.display = 'none';
+  document.getElementById('case-view').style.display = 'block';
+  openCase(caseId);
+}
+
+/* ─── Init ──────────────────────────────────────── */
+// Show skeleton loaders while cases load
+document.getElementById('case-scroll').innerHTML = `
+  ${[1,2,3,4].map(()=>`
+    <div class="skel-card" style="gap:9px;padding:12px;margin-bottom:4px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="skel skel-line" style="width:52%"></div>
+        <div class="skel skel-short" style="width:24%"></div>
+      </div>
+      <div class="skel skel-bar"></div>
+    </div>`).join('')}`;
+
+loadSidebar();
+loadNotifications();
+// Refresh notifications every 60s
+setInterval(loadNotifications, 60000);
+</script>
+</body>
+</html>
