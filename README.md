@@ -1,5 +1,4 @@
-# ⚡ AI Payment Guardian
-### Razorpay AI Buildathon 2026 — Track 03: AI Revenue Recovery
+# AI Payment Guardian
 
 > An agentic revenue recovery system that detects payments at risk, determines the right intervention, and executes a bounded recovery workflow — with stopping rules, audit trail, and measured outcomes.
 
