@@ -253,8 +253,8 @@ class CreateOrderRequest(BaseModel):
 
 @app.post("/api/razorpay/create-order")
 def create_razorpay_order(body: CreateOrderRequest, db: Session = Depends(get_db)):
-    import random, string
-    payment_id = "pay_" + "".join(random.choices(string.ascii_letters + string.digits, k=16))
+    import uuid
+    payment_id = "pay_" + uuid.uuid4().hex[:16]
     user = db.query(User).first()
     if not user:
         raise HTTPException(status_code=404, detail="No user found")

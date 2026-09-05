@@ -92,3 +92,16 @@ def test_approve_reject_flow():
         # Approving again must be rejected — it is no longer pending
         again = client.post(f"/api/actions/{action_id}/approve", json={"approved": False})
         assert again.status_code == 400
+
+
+def test_checkout_creates_unique_payment_ids():
+    """Regression: seeded global RNG used to make every payment_id identical."""
+    with TestClient(app) as client:
+        r1 = client.post("/api/razorpay/create-order", json={"merchant": "UniqueMart", "amount": 500})
+        r2 = client.post("/api/razorpay/create-order", json={"merchant": "UniqueMart", "amount": 600})
+        assert r1.status_code == 200
+        assert r2.status_code == 200
+        p1, p2 = r1.json()["payment_id"], r2.json()["payment_id"]
+        c1, c2 = r1.json()["case_id"], r2.json()["case_id"]
+        assert p1 != p2
+        assert c1 != c2

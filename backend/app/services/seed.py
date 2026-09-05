@@ -15,7 +15,9 @@ from app.services.health_score import (
     EVENT_DELIVERY_COMPLETED, EVENT_DISPUTE_OPENED, EVENT_SUPPORT_CONTACTED,
 )
 
-random.seed(42)
+# Isolated RNG so deterministic demo data doesn't poison the global random module
+_rng = random.Random(42)
+
 
 MERCHANTS = [
     "XYZ Electronics", "BookStore Online", "FashionHub", "TechGadgets India",
@@ -30,7 +32,7 @@ AMOUNTS = [299, 499, 799, 999, 1299, 1499, 1999, 2499, 2999, 3499, 4999, 5999, 7
 
 
 def random_date(days_ago_min, days_ago_max):
-    days = random.randint(days_ago_min, days_ago_max)
+    days = _rng.randint(days_ago_min, days_ago_max)
     return datetime.utcnow() - timedelta(days=days)
 
 
@@ -56,8 +58,8 @@ def seed():
     # These are the hardest to recover — need escalation
     # ───────────────────────────────────────────────
     for i in range(10):
-        merchant = random.choice(MERCHANTS[:10])
-        amount = random.choice(AMOUNTS[4:])
+        merchant = _rng.choice(MERCHANTS[:10])
+        amount = _rng.choice(AMOUNTS[4:])
         tx = Transaction(
             user_id=user.id,
             razorpay_payment_id=f"pay_delayed_{i:03d}",
@@ -68,17 +70,17 @@ def seed():
         case = get_or_create_case(db, tx.id, "delayed_order")
         add_event(db, case.id, EVENT_PAYMENT_SUCCESS, {"amount": amount, "merchant": merchant})
         add_event(db, case.id, EVENT_ORDER_CONFIRMED, {"order_id": f"ORD-A{i:03d}"})
-        add_event(db, case.id, EVENT_DELIVERY_DELAYED, {"days_overdue": random.randint(2, 10)})
-        if random.random() > 0.4:
-            add_event(db, case.id, EVENT_MERCHANT_UNRESPONSIVE, {"attempts": random.randint(1, 3)})
+        add_event(db, case.id, EVENT_DELIVERY_DELAYED, {"days_overdue": _rng.randint(2, 10)})
+        if _rng.random() > 0.4:
+            add_event(db, case.id, EVENT_MERCHANT_UNRESPONSIVE, {"attempts": _rng.randint(1, 3)})
         case_count += 1
 
     # ───────────────────────────────────────────────
     # SCENARIO B: Delayed / stuck refund (10 cases)
     # ───────────────────────────────────────────────
     for i in range(10):
-        merchant = random.choice(MERCHANTS[5:15])
-        amount = random.choice(AMOUNTS[3:12])
+        merchant = _rng.choice(MERCHANTS[5:15])
+        amount = _rng.choice(AMOUNTS[3:12])
         tx = Transaction(
             user_id=user.id,
             razorpay_payment_id=f"pay_refund_{i:03d}",
@@ -90,7 +92,7 @@ def seed():
         add_event(db, case.id, EVENT_PAYMENT_SUCCESS, {"amount": amount})
         add_event(db, case.id, EVENT_ORDER_CONFIRMED, {"order_id": f"ORD-B{i:03d}"})
         add_event(db, case.id, EVENT_REFUND_INITIATED, {"reason": "Item not as described", "expected_days": 7})
-        add_event(db, case.id, EVENT_REFUND_DELAYED, {"days_overdue": random.randint(3, 12)})
+        add_event(db, case.id, EVENT_REFUND_DELAYED, {"days_overdue": _rng.randint(3, 12)})
         case_count += 1
 
     # ───────────────────────────────────────────────
@@ -99,8 +101,8 @@ def seed():
     # ───────────────────────────────────────────────
     sub_merchants = ["NetflixIN", "SpotifyIN", "HotstarPremium", "ZeeTV", "SonyLIV"]
     for i in range(8):
-        merchant = random.choice(sub_merchants)
-        amount = random.choice([149, 199, 299, 499, 649, 999])
+        merchant = _rng.choice(sub_merchants)
+        amount = _rng.choice([149, 199, 299, 499, 649, 999])
         tx = Transaction(
             user_id=user.id,
             razorpay_payment_id=f"pay_sub_{i:03d}",
@@ -110,7 +112,7 @@ def seed():
         db.add(tx); db.commit(); db.refresh(tx)
         case = get_or_create_case(db, tx.id, "failed_subscription")
         add_event(db, case.id, EVENT_PAYMENT_FAILED, {
-            "reason": random.choice(["insufficient_funds", "card_expired", "bank_server_down", "otp_timeout"]),
+            "reason": _rng.choice(["insufficient_funds", "card_expired", "bank_server_down", "otp_timeout"]),
             "merchant": merchant,
             "amount": amount,
         })
@@ -120,7 +122,7 @@ def seed():
     # SCENARIO D: Suspicious / high-risk transactions (6 cases)
     # ───────────────────────────────────────────────
     for i in range(6):
-        amount = random.choice(AMOUNTS[10:])  # high amounts
+        amount = _rng.choice(AMOUNTS[10:])  # high amounts
         tx = Transaction(
             user_id=user.id,
             razorpay_payment_id=f"pay_sus_{i:03d}",
@@ -131,7 +133,7 @@ def seed():
         case = get_or_create_case(db, tx.id, "suspicious")
         add_event(db, case.id, EVENT_PAYMENT_SUCCESS, {"amount": amount})
         add_event(db, case.id, EVENT_SUSPICIOUS_ACTIVITY, {
-            "signals": random.sample(["unusual_amount", "new_merchant", "unusual_time", "multiple_attempts", "vpn_detected"], 2),
+            "signals": _rng.sample(["unusual_amount", "new_merchant", "unusual_time", "multiple_attempts", "vpn_detected"], 2),
         })
         case_count += 1
 
@@ -139,8 +141,8 @@ def seed():
     # SCENARIO E: Support contacted, awaiting resolution (6 cases)
     # ───────────────────────────────────────────────
     for i in range(6):
-        merchant = random.choice(MERCHANTS[3:12])
-        amount = random.choice(AMOUNTS[2:9])
+        merchant = _rng.choice(MERCHANTS[3:12])
+        amount = _rng.choice(AMOUNTS[2:9])
         tx = Transaction(
             user_id=user.id,
             razorpay_payment_id=f"pay_sup_{i:03d}",
@@ -151,7 +153,7 @@ def seed():
         case = get_or_create_case(db, tx.id, "support_pending")
         add_event(db, case.id, EVENT_PAYMENT_SUCCESS, {"amount": amount})
         add_event(db, case.id, EVENT_ORDER_CONFIRMED, {"order_id": f"ORD-E{i:03d}"})
-        add_event(db, case.id, EVENT_DELIVERY_DELAYED, {"days_overdue": random.randint(1, 5)})
+        add_event(db, case.id, EVENT_DELIVERY_DELAYED, {"days_overdue": _rng.randint(1, 5)})
         add_event(db, case.id, EVENT_SUPPORT_CONTACTED, {"ticket_id": f"TKT-{1000+i}"})
         case_count += 1
 
@@ -160,8 +162,8 @@ def seed():
     # Baseline for recovery rate metrics
     # ───────────────────────────────────────────────
     for i in range(10):
-        merchant = random.choice(MERCHANTS[:15])
-        amount = random.choice(AMOUNTS[:8])
+        merchant = _rng.choice(MERCHANTS[:15])
+        amount = _rng.choice(AMOUNTS[:8])
         tx = Transaction(
             user_id=user.id,
             razorpay_payment_id=f"pay_ok_{i:03d}",
@@ -172,7 +174,7 @@ def seed():
         case = get_or_create_case(db, tx.id, "normal")
         add_event(db, case.id, EVENT_PAYMENT_SUCCESS, {"amount": amount})
         add_event(db, case.id, EVENT_ORDER_CONFIRMED, {"order_id": f"ORD-F{i:03d}"})
-        add_event(db, case.id, EVENT_DELIVERY_COMPLETED, {"delivered_on": (datetime.utcnow() - timedelta(days=random.randint(1, 10))).isoformat()})
+        add_event(db, case.id, EVENT_DELIVERY_COMPLETED, {"delivered_on": (datetime.utcnow() - timedelta(days=_rng.randint(1, 10))).isoformat()})
         case_count += 1
 
     print(f"✅ Seed data created: {case_count} cases across 6 recovery scenarios")

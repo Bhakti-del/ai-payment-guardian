@@ -349,20 +349,26 @@ class PaymentAgent:
         # Collect recovery interventions triggered this session
         recovery_interventions = []
         if case_id:
+            import re as _re
             from app.models.database import RecoveryIntervention
             interventions = db.query(RecoveryIntervention).filter(
                 RecoveryIntervention.case_id == case_id,
             ).order_by(RecoveryIntervention.created_at.desc()).limit(5).all()
-            recovery_interventions = [
-                {
+            for i in interventions:
+                link = None
+                if i.message_sent:
+                    m = _re.search(r"https?://[^\s)\"]+", i.message_sent)
+                    if m:
+                        link = m.group(0)
+                recovery_interventions.append({
                     "intervention_id": i.id,
                     "type": i.intervention_type,
                     "channel": i.channel,
                     "attempt": i.attempt_number,
                     "outcome": i.outcome,
-                }
-                for i in interventions
-            ]
+                    "link": link,
+                    "simulated": "[simulated link" in (i.notes or ""),
+                })
 
         return {
             "response": final_text,
