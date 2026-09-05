@@ -3,7 +3,6 @@ Agent tools — these are the functions the AI agent can call.
 Each tool returns clean, structured data. No raw DB objects exposed to LLM.
 """
 import json
-import random
 from sqlalchemy.orm import Session
 from app.models.database import Transaction, PaymentCase, Event, AgentAction, RecoveryIntervention
 from app.services.health_score import calculate_health_score, score_to_label
@@ -12,6 +11,7 @@ from app.services.case_engine import (
     should_stop_recovery, log_intervention, get_next_recovery_channel,
     get_recovery_summary, mark_intervention_outcome,
 )
+from app.services.razorpay_client import create_payment_link
 
 
 def get_transaction(db: Session, transaction_id: int) -> dict:
@@ -202,7 +202,7 @@ def trigger_recovery(db: Session, case_id: int, reason: str, batch_id: int = Non
     """
     Trigger a recovery intervention for a case.
     Checks stopping rules first. Picks the next appropriate channel.
-    Sends a simulated recovery message (payment link or reminder).
+    Sends a recovery message with a Razorpay payment link.
     """
     stop = should_stop_recovery(db, case_id)
     if stop["stop"]:
@@ -219,8 +219,16 @@ def trigger_recovery(db: Session, case_id: int, reason: str, batch_id: int = Non
     tx = db.query(Transaction).filter(Transaction.id == case.transaction_id).first()
     channel = get_next_recovery_channel(db, case_id)
 
-    # Simulate Razorpay payment link generation
-    payment_link = f"https://rzp.io/l/recovery-{case_id}-{random.randint(1000,9999)}"
+    # Create a real Razorpay payment link (falls back to simulated when no key)
+    link = create_payment_link(
+        amount=tx.amount if tx else 0,
+        currency=tx.currency if tx else "INR",
+        merchant=tx.merchant if tx else "merchant",
+        case_id=case_id,
+        description=f"Payment recovery — {tx.merchant if tx else 'merchant'}",
+    )
+    payment_link = link["short_url"]
+    is_simulated = link.get("simulated", False)
 
     # Craft message based on channel
     if channel == "sms" or channel == "whatsapp":
@@ -241,7 +249,7 @@ def trigger_recovery(db: Session, case_id: int, reason: str, batch_id: int = Non
         channel=channel,
         message_sent=message,
         batch_id=batch_id,
-        notes=reason,
+        notes=(reason or "") + (f" [simulated link: {link.get('reason')}]" if is_simulated else " [real Razorpay payment link]"),
     )
 
     return {
@@ -250,6 +258,8 @@ def trigger_recovery(db: Session, case_id: int, reason: str, batch_id: int = Non
         "channel": channel,
         "attempt_number": intervention.attempt_number,
         "payment_link": payment_link,
+        "payment_link_id": link.get("id"),
+        "simulated_link": is_simulated,
         "message_preview": message,
         "case_id": case_id,
     }

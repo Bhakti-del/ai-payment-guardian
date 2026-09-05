@@ -141,6 +141,7 @@ Every intervention is logged with: case ID, merchant, channel used, attempt numb
 | Frontend | Plain HTML/CSS/JS — no build step |
 | Backend | Python, FastAPI, Uvicorn |
 | Database | SQLite via SQLAlchemy |
+| Recovery links | Razorpay Payment Links API (official SDK) |
 | AI | Groq API (`openai/gpt-oss-120b`) with tool calling |
 | Deployment | Render (`render.yaml` included) |
 
@@ -202,6 +203,7 @@ Health scores, stopping rules, channel selection, and state transitions are neve
 ### Prerequisites
 - Python 3.10+
 - Free [Groq API key](https://console.groq.com)
+- Optional: [Razorpay test keys](https://dashboard.razorpay.com/app/keys) (for real payment links)
 
 ### Quick start
 
@@ -212,6 +214,7 @@ cd ai-payment-guardian
 # Set your API key
 cp .env.example backend/.env
 # Edit backend/.env → add GROQ_API_KEY=your_key
+# Optional → add real RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET (test keys)
 
 # Start
 ./start.sh
@@ -227,6 +230,29 @@ uvicorn app.main:app --reload
 ```
 
 Then open `frontend/index.html` in your browser.
+
+### Tests
+
+```bash
+# From the repo root
+pip install -r backend/requirements-dev.txt
+pytest
+```
+
+---
+
+## Razorpay Integration
+
+Recovery interventions create a **real Razorpay payment link** — a hosted,
+collect-on-click link so the customer can pay instantly to recover the amount.
+
+- **Real path:** when `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` are set (test keys
+  are fine), `trigger_recovery()` calls the Razorpay **Payment Links API** via the
+  official SDK and embeds the returned `short_url` in the recovery message.
+- **Graceful fallback:** if credentials are missing or the API call fails, a
+  clearly-labeled simulated link (`rzp.io/l/recovery-...`) is used so the demo
+  and AI agent never break offline. The intervention's audit notes flag whether
+  the link was real or simulated.
 
 ---
 

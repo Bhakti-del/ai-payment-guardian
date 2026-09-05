@@ -9,7 +9,7 @@
 
 1. **Detects** payments at risk using a deterministic health scoring engine (50 seeded cases across 6 real failure scenarios)
 2. **Diagnoses** root cause via an AI agent with tool calling — never guessing, only using real data
-3. **Executes** a bounded recovery workflow: email → SMS → WhatsApp (Hinglish for mobile), with a Razorpay payment link every time
+3. **Executes** a bounded recovery workflow: email → SMS → WhatsApp (Hinglish for mobile), with a **real Razorpay payment link** every time (via the Payment Links API — falls back to a clearly-labeled simulated link only when test keys are absent)
 4. **Enforces** hard stopping rules — max 3 interventions per case, max 1 escalation, never chasing after a dispute is filed
 5. **Measures** outcomes — money recovered, recovery rate, full intervention audit trail per batch run
 
@@ -112,6 +112,7 @@ Full architecture: [docs/architecture.md](docs/architecture.md)
 ## What I'd Do Next (with more time)
 
 - **Real Razorpay webhook integration** — replace simulated events with live `payment.failed`, `refund.created` webhooks
+- **Real checkout flow** — wire `/api/razorpay/create-order` to a live Razorpay Order/Checkout (it currently simulates a successful payment)
 - **Mandate retry sequencer** — intelligent retry timing for subscription failures (not just immediate retry)
 - **Promise-to-pay tracker** — if customer says "I'll pay by Friday", schedule a follow-up
 - **Voice recovery** — Hinglish voice call for high-value cases using a TTS API
